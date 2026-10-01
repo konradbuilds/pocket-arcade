@@ -1,23 +1,22 @@
-# Pocket Racer v0.2
+# Pocket Arcade v0.3
 
-A phone-first, tilt-controlled cartoon kart cruiser.
+Same Pocket Arcade app and same GitHub Pages URL.
 
-## Controls
-- Phone: gently tilt left/right.
-- Touch fallback: drag left/right.
-- Desktop fallback: left/right arrow keys.
-- You cannot leave the road. Edge hits and road obstacles only slow you down.
-- Clean driving gradually increases speed.
-- Procedural 8-bit music speeds up with the kart.
+Games:
+- **TILT RACER** — rebuilt with real synced forward motion, slower start and smoother acceleration.
+- **BALANCE** — retained.
 
-## GitHub Pages
-Upload all files in this folder to the repository root.
+## Performance changes
+- Canvas DPR capped at 1.5 for phones.
+- Fewer road strips and decorative objects.
+- Removed expensive blur effects from gameplay UI.
+- Road, centre dashes, scenery and obstacles share one forward-travel value.
+- Objects spawn much more slowly at the beginning.
+- Procedural chiptune tempo follows actual racer speed.
 
-GitHub → Settings → Pages → Deploy from branch → `main` → `/ (root)`.
+## Update your existing GitHub Pages app
+Replace the files in the same repository root and commit.
 
-Open the HTTPS Pages URL on Android or iPhone. On iPhone, allow motion access when prompted.
+Do not create a new repository. The URL stays the same.
 
-## Licence
-Code: MIT Licence.
-
-The game graphics and procedural music in this prototype are generated as part of the project and may also be used under the MIT Licence. No Nintendo/Mario assets, characters, music, names, or other third-party game assets are included.
+If the previous PWA version appears after deployment, fully reload or reopen once so the new service worker takes over.
