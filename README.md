@@ -1,22 +1,23 @@
-# Pocket Arcade
+# Pocket Racer v0.2
 
-Three tiny phone-first games in one installable web app.
+A phone-first, tilt-controlled cartoon kart cruiser.
 
-- **DRIFT** — tilt racer
-- **FLICK!** — swipe-controlled gravity
-- **BALANCE** — precision tilt puzzle
-
-## Run locally
-
-Open `index.html` for touch/keyboard testing.
-
-Motion sensors usually require HTTPS, so test tilt controls from GitHub Pages or another HTTPS host.
+## Controls
+- Phone: gently tilt left/right.
+- Touch fallback: drag left/right.
+- Desktop fallback: left/right arrow keys.
+- You cannot leave the road. Edge hits and road obstacles only slow you down.
+- Clean driving gradually increases speed.
+- Procedural 8-bit music speeds up with the kart.
 
 ## GitHub Pages
+Upload all files in this folder to the repository root.
 
-1. Upload these files to the repository root.
-2. GitHub → Settings → Pages.
-3. Deploy from branch → `main` → `/ (root)`.
-4. Open the Pages URL on Android or iPhone.
+GitHub → Settings → Pages → Deploy from branch → `main` → `/ (root)`.
 
-On iPhone, tap **Enable motion** when prompted. For an app-like icon, use Safari → Share → Add to Home Screen.
+Open the HTTPS Pages URL on Android or iPhone. On iPhone, allow motion access when prompted.
+
+## Licence
+Code: MIT Licence.
+
+The game graphics and procedural music in this prototype are generated as part of the project and may also be used under the MIT Licence. No Nintendo/Mario assets, characters, music, names, or other third-party game assets are included.

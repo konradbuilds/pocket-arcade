@@ -1,11 +1,12 @@
 {
-  "name": "Pocket Arcade",
-  "short_name": "Pocket Arcade",
+  "name": "Pocket Racer",
+  "short_name": "Pocket Racer",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#111318",
-  "theme_color": "#111318",
-  "description": "Three tiny phone-first games: DRIFT, FLICK! and BALANCE.",
+  "orientation": "portrait",
+  "background_color": "#53c7ff",
+  "theme_color": "#53c7ff",
+  "description": "A simple, colourful tilt-controlled kart cruiser.",
   "icons": [
     {
       "src": "icon-192.png",
