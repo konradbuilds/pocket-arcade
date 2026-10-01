@@ -1,22 +1,24 @@
-# Pocket Arcade v0.3
+# Pocket Arcade v0.4
 
 Same Pocket Arcade app and same GitHub Pages URL.
 
 Games:
-- **TILT RACER** — rebuilt with real synced forward motion, slower start and smoother acceleration.
-- **BALANCE** — retained.
+- **TILT RACER** — game 1
+- **BALANCE** — game 2
 
-## Performance changes
-- Canvas DPR capped at 1.5 for phones.
-- Fewer road strips and decorative objects.
-- Removed expensive blur effects from gameplay UI.
-- Road, centre dashes, scenery and obstacles share one forward-travel value.
-- Objects spawn much more slowly at the beginning.
-- Procedural chiptune tempo follows actual racer speed.
+## v0.4 racer changes
+- Much smoother forward motion.
+- Stable road surface instead of snapping road bands.
+- Curbs, centre dashes, scenery and obstacles move continuously from the same travel value.
+- Long frames are split into small simulation steps to reduce visible jumps.
+- Phone render density capped at 1.25× for better frame rate.
+- Starts at about **90 km/h-ish**.
+- Clean driving climbs smoothly to about **1140 km/h-ish**.
+- Obstacles remain sparse at the beginning.
+- 8-bit music tempo still follows speed.
 
-## Update your existing GitHub Pages app
-Replace the files in the same repository root and commit.
+## Update
+Replace the files in the same GitHub repository root and commit.
+The GitHub Pages URL stays the same.
 
-Do not create a new repository. The URL stays the same.
-
-If the previous PWA version appears after deployment, fully reload or reopen once so the new service worker takes over.
+If an old PWA build appears once after deployment, close/reopen or hard-refresh so the new service worker takes over.

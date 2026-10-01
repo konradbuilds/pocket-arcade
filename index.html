@@ -191,7 +191,7 @@
   function resize(){
     const r=wrap.getBoundingClientRect();
     W=Math.max(1,Math.floor(r.width));H=Math.max(1,Math.floor(r.height));
-    DPR=Math.min(1.5,window.devicePixelRatio||1); // performance first on phones
+    DPR=Math.min(1.25,window.devicePixelRatio||1); // smoother phone rendering
     canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
   }
@@ -241,7 +241,7 @@
     racer:{
       title:'TILT RACER',
       sub:'Tilt gently · the road gets faster',
-      intro:'Cruise. Tilt gently. You cannot fall off the road. Edge hits and silly road junk only slow you down. Drive clean and the whole world gradually speeds up.',
+      intro:'Cruise. Tilt gently. You cannot fall off the road. Edge hits and silly road junk only slow you down. Start around 90 km/h-ish. Drive clean and the whole world smoothly winds up past 1000.',
       tiny:'Phone tilt is easiest. Drag or ← → works too.'
     },
     balance:{
@@ -272,7 +272,7 @@
     menu.style.display='none';gameEl.classList.add('active');
     hudTitle.textContent=c.title;hudSub.textContent=c.sub;introTitle.textContent=c.title;introText.textContent=c.intro;introTiny.textContent=c.tiny;
     scoreLabel.textContent=name==='racer'?'speed':'home';
-    scoreEl.textContent=name==='racer'?'18':'0';
+    scoreEl.textContent=name==='racer'?'90':'0';
     introOverlay.classList.remove('hidden');endOverlay.classList.add('hidden');
     resize();stopGame();state=makeState(name);draw();
   }
@@ -330,11 +330,11 @@
     if(type==='racer'){
       return{
         type,t:0,
-        speed:.12, targetSpeed:.12, maxSpeed:1,
+        speed:0, targetSpeed:0, maxSpeed:1,
         playerX:0,steerVel:0,bumpCooldown:0,
         cleanTime:0,
         travel:0,            // single source of truth for ALL forward motion
-        obstacleTimer:3.4,
+        obstacleTimer:5.2,
         obstacles:[],
         sceneryTimer:.8,
         scenery:[]
@@ -361,8 +361,15 @@
   }
 
   function loop(now){
-    const dt=Math.min(.03,(now-last)/1000||.016);last=now;
-    update(dt);draw();
+    const raw=Math.min(.04,(now-last)/1000||.016);
+    last=now;
+
+    // Break occasional long frames into tiny updates instead of one visible jump.
+    const steps=Math.max(1,Math.ceil(raw/.008));
+    const dt=raw/steps;
+    for(let i=0;i<steps;i++)update(dt);
+
+    draw();
     if(running)raf=requestAnimationFrame(loop);
   }
 
@@ -373,7 +380,7 @@
 
   // ---------- RACER ----------
   function speed01(){return state.speed;}
-  function worldRate(){return 0.115 + speed01()*.39;} // how quickly z approaches player
+  function worldRate(){return 0.085 + speed01()*.50;} // shared forward motion
 
   function roadCenterAt(p){
     // curved road; curves drift slowly with distance
@@ -407,9 +414,10 @@
   }
 
   function slowDown(mult){
-    state.speed=Math.max(.08,state.speed*mult);
-    state.cleanTime=0;
-    state.bumpCooldown=.22;
+    state.speed=Math.max(0,state.speed*mult);
+    // A bump knocks speed down, but doesn't erase all long-term progress.
+    state.cleanTime=Math.max(0,state.cleanTime-7);
+    state.bumpCooldown=.24;
     blip(95,.055,'square',.035);haptic(16);
   }
 
@@ -430,26 +438,26 @@
     }
     state.bumpCooldown=Math.max(0,state.bumpCooldown-dt);
 
-    // Starts slow; meaningful visual acceleration over ~45 seconds.
+    // 90 km/h-ish at launch, then a long smooth climb past 1000.
     state.cleanTime+=dt;
-    state.targetSpeed=clamp(.12 + state.cleanTime/46,.12,1);
-    state.speed=lerp(state.speed,state.targetSpeed,1-Math.pow(.55,dt));
+    state.targetSpeed=clamp(state.cleanTime/52,0,1);
+    state.speed=lerp(state.speed,state.targetSpeed,1-Math.pow(.42,dt));
 
-    // One shared travel value drives road + objects + scenery.
-    state.travel += dt*(.35 + state.speed*2.0);
+    // One shared travel value drives road markings, scenery and obstacles.
+    state.travel += dt*(.24 + state.speed*2.75);
     const rate=worldRate();
 
     // Objects start sparse. Frequency increases gently with speed.
     state.obstacleTimer-=dt;
     if(state.obstacleTimer<=0){
       spawnObstacle();
-      state.obstacleTimer=lerp(4.8,2.2,state.speed)*rnd(.85,1.15);
+      state.obstacleTimer=lerp(5.0,2.0,state.speed)*rnd(.90,1.12);
     }
 
     state.sceneryTimer-=dt;
     if(state.sceneryTimer<=0){
       spawnScenery();
-      state.sceneryTimer=lerp(.95,.38,state.speed)*rnd(.85,1.15);
+      state.sceneryTimer=lerp(1.05,.34,state.speed)*rnd(.90,1.10);
     }
 
     for(const o of state.obstacles){
@@ -467,7 +475,7 @@
     for(const s of state.scenery)s.z-=dt*rate;
     state.scenery=state.scenery.filter(s=>s.z>-0.04);
 
-    scoreEl.textContent=Math.round(18+state.speed*112);
+    scoreEl.textContent=Math.round(90+state.speed*1050);
   }
 
   function updateBalance(dt){
@@ -536,40 +544,72 @@
     for(let x=0;x<=W;x+=70)ctx.lineTo(x,H*.275+Math.sin(x*.018+state.travel*.06)*15);
     ctx.lineTo(W,H*.40);ctx.lineTo(0,H*.40);ctx.closePath();ctx.fill();
 
-    // road surface in ~26 strips, with moving band pattern tied to travel
-    const steps=26;
-    const phase=(state.travel*.72)%1;
-    for(let i=0;i<steps;i++){
-      const a=(i+phase)/steps,b=(i+1+phase)/steps;
-      let p0=a%1,p1=b%1;
-      if(p1<p0)continue;
-      const y0=roadY(p0),y1=roadY(p1),c0=roadCenterAt(p0),c1=roadCenterAt(p1),h0=roadHalfAt(p0),h1=roadHalfAt(p1);
-      const band=((i+Math.floor(state.travel*3))&1)===0;
+    // Stable road polygon: no snapping bands.
+    const horizonP=.015,bottomP=1;
+    const hy=roadY(horizonP),by=roadY(bottomP);
+    const hc=roadCenterAt(horizonP),bc=roadCenterAt(bottomP);
+    const hh=roadHalfAt(horizonP),bh=roadHalfAt(bottomP);
 
-      ctx.fillStyle=band?'#81df73':'#8be978';ctx.fillRect(0,y0,W,y1-y0+2);
+    // grass base
+    ctx.fillStyle='#86e276';ctx.fillRect(0,H*.30,W,H*.70);
 
-      // curbs
-      ctx.beginPath();ctx.moveTo(c0-h0*1.075,y0);ctx.lineTo(c1-h1*1.075,y1);ctx.lineTo(c1-h1,y1);ctx.lineTo(c0-h0,y0);ctx.closePath();
-      ctx.fillStyle=band?'#fff5e8':'#ff655c';ctx.fill();
+    // road
+    ctx.beginPath();
+    ctx.moveTo(hc-hh,hy);ctx.lineTo(bc-bh,by);
+    ctx.lineTo(bc+bh,by);ctx.lineTo(hc+hh,hy);ctx.closePath();
+    ctx.fillStyle='#555e6b';ctx.fill();
 
-      ctx.beginPath();ctx.moveTo(c0+h0,y0);ctx.lineTo(c1+h1,y1);ctx.lineTo(c1+h1*1.075,y1);ctx.lineTo(c0+h0*1.075,y0);ctx.closePath();
-      ctx.fillStyle=band?'#fff5e8':'#ff655c';ctx.fill();
-
-      // asphalt
-      ctx.beginPath();ctx.moveTo(c0-h0,y0);ctx.lineTo(c1-h1,y1);ctx.lineTo(c1+h1,y1);ctx.lineTo(c0+h0,y0);ctx.closePath();
-      ctx.fillStyle=band?'#59616e':'#515966';ctx.fill();
+    // Very subtle travelling road texture.
+    const textureCount=16;
+    for(let i=0;i<textureCount;i++){
+      const p=((i/textureCount)+(state.travel*.055))%1;
+      if(p<.025)continue;
+      const p2=Math.min(1,p+.018+.018*p);
+      const y0=roadY(p),y1=roadY(p2);
+      const c0=roadCenterAt(p),c1=roadCenterAt(p2);
+      const h0=roadHalfAt(p),h1=roadHalfAt(p2);
+      ctx.beginPath();
+      ctx.moveTo(c0-h0,y0);ctx.lineTo(c1-h1,y1);
+      ctx.lineTo(c1+h1,y1);ctx.lineTo(c0+h0,y0);ctx.closePath();
+      ctx.fillStyle='rgba(255,255,255,.018)';ctx.fill();
     }
 
-    // moving centre dashes — much clearer motion cue
-    const dashCount=10;
+    // Continuous perspective curb blocks. Their positions move; the road itself never jumps.
+    const curbCount=22;
+    const curbPhase=(state.travel*.115)%1;
+    for(let i=0;i<curbCount;i++){
+      const p=(i/curbCount+curbPhase)%1;
+      if(p<.018)continue;
+      const p2=Math.min(1,p+.025+.018*p);
+      const y0=roadY(p),y1=roadY(p2);
+      const c0=roadCenterAt(p),c1=roadCenterAt(p2);
+      const h0=roadHalfAt(p),h1=roadHalfAt(p2);
+      const outer0=h0*1.075,outer1=h1*1.075;
+      const col=(i&1)?'#fff5e8':'#ff655c';
+
+      ctx.beginPath();
+      ctx.moveTo(c0-outer0,y0);ctx.lineTo(c1-outer1,y1);
+      ctx.lineTo(c1-h1,y1);ctx.lineTo(c0-h0,y0);ctx.closePath();
+      ctx.fillStyle=col;ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(c0+h0,y0);ctx.lineTo(c1+h1,y1);
+      ctx.lineTo(c1+outer1,y1);ctx.lineTo(c0+outer0,y0);ctx.closePath();
+      ctx.fillStyle=col;ctx.fill();
+    }
+
+    // Centre dashes: continuous fractional phase for obvious smooth acceleration.
+    const dashCount=13;
+    const dashPhase=(state.travel*.095)%1;
     for(let i=0;i<dashCount;i++){
-      const cyc=(i/dashCount + (state.travel*.22))%1;
-      const p=cyc;
-      if(p<.04)continue;
-      const p2=Math.min(1,p+.045+.02*p);
+      const p=(i/dashCount+dashPhase)%1;
+      if(p<.025)continue;
+      const p2=Math.min(1,p+.040+.025*p);
       const y0=roadY(p),y1=roadY(p2),c0=roadCenterAt(p),c1=roadCenterAt(p2);
-      const w0=Math.max(1,roadHalfAt(p)*.022),w1=Math.max(1,roadHalfAt(p2)*.022);
-      ctx.beginPath();ctx.moveTo(c0-w0,y0);ctx.lineTo(c1-w1,y1);ctx.lineTo(c1+w1,y1);ctx.lineTo(c0+w0,y0);ctx.closePath();
+      const w0=Math.max(1,roadHalfAt(p)*.021),w1=Math.max(1,roadHalfAt(p2)*.021);
+      ctx.beginPath();
+      ctx.moveTo(c0-w0,y0);ctx.lineTo(c1-w1,y1);
+      ctx.lineTo(c1+w1,y1);ctx.lineTo(c0+w0,y0);ctx.closePath();
       ctx.fillStyle='#fff8dc';ctx.fill();
     }
 
@@ -675,7 +715,7 @@
   function noteFreq(semi,oct=0){return 261.63*Math.pow(2,(semi+oct*12)/12);}
   function musicTick(){
     if(!soundOn||!running||current!=='racer'){musicTimer=null;return;}
-    const bpm=82+state.speed*96;
+    const bpm=84+state.speed*126;
     const beat=60000/bpm/2;
     blip(noteFreq(melody[musicStep%melody.length],1),Math.min(.075,beat/1000*.55),'square',.015);
     if(musicStep%2===0)blip(noteFreq(bass[(musicStep/2)%bass.length|0],-1),Math.min(.10,beat/1000*.68),'triangle',.020);
